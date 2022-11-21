@@ -1,0 +1,143 @@
+
+
+
+
+// 드로잉 할 때 화면 전체 지우기 - 드로잉 버퍼 지우기 함수의 수정 버전
+
+void GLCD_Draw_Clear(){
+
+	// 1단계: 드로잉 버퍼에 남아 있는 이전 그림 데이터 화면 지우기 (LCD 내부의 데이터 지우기)
+
+	for(int x=0; x<8; x++){
+		for(int y=0; y<128; y++){
+
+			// 드로잉 버퍼에 이전 그림이 남아 있을 때만 해당 부분 화면 지우기
+			if(ScreenBuffer[x][y] != 0){
+				GLCD_Command(GLCD_CS1_2, GLCD_SET_X_ADDR+x);
+
+				if(y <= 63) { 
+					GLCD_Command(GLCD_CS1, GLCD_SET_Y_ADDR+y);
+					GLCD_Data(GLCD_CS1, 0x00);  
+				}
+				else  { 
+					GLCD_Command(GLCD_CS2, GLCD_SET_Y_ADDR+y-64);    
+					GLCD_Data(GLCD_CS2, 0x00);  
+				}
+			}
+		}
+	}
+
+	// 2단계: 드로잉 버퍼 0으로 리셋하기 1024=128*8 바이트
+	memset(ScreenBuffer, 0, 1024);
+
+}
+
+
+
+
+// 원을 오른쪽으로 이동시키는 예제
+
+
+int main(void)
+{ 
+	unsigned char i;
+	_delay_ms(50);                                 // wait for system stabilization
+	GLCD_Port_Init();                             // initialize MCU and kit
+	GLCD_Init();
+
+	while(1)
+	{ 
+		for(i=0; i<20; i++){
+			GLCD_Circle(10, 20+i, 10);
+			_delay_ms(1000);			
+			GLCD_Draw_Clear(); // 드로잉 버퍼(이전 그림) 지우기
+		}
+	}
+}
+
+
+
+-----------------------------------------------------------------------------------------------------------
+
+
+
+
+// 사각형 폭이 늘어났다가 다시 줄어드는 예제
+
+
+int main(void)
+{ 
+	unsigned char i;
+	_delay_ms(50);                                 // wait for system stabilization
+	GLCD_Port_Init();                             // initialize MCU and kit
+	GLCD_Init();
+
+	while(1)
+	{ 
+		for(i=0; i<10; i++){
+			GLCD_Rectangle(0, 0, 10, 10+i);
+			_delay_ms(500);
+			GLCD_Draw_Clear(); // 드로잉 버퍼(이전 그림) 지우기
+		}
+
+		for(i=10; i>0; i--){
+			GLCD_Rectangle(0, 0, 10, 10+i);
+			_delay_ms(500);
+			GLCD_Draw_Clear(); // 드로잉 버퍼(이전 그림) 지우기
+		}
+	}
+}
+
+-------------------------------------------------
+
+(실행할 때마다 랜덤값이 되도록 광센서 값을 이용)
+
+
+#include <avr/io.h>
+#define F_CPU 16000000UL
+#include <util/delay.h>
+#include "GLCD_Eng.h"
+#include "GLCD_Draw.h"
+
+void init_adc(){
+	ADMUX=0x00;
+	ADCSRA=0x87;
+}
+
+unsigned short read_adc()
+{
+	 unsigned char adc_low, adc_high;
+	unsigned short value;
+	ADCSRA |= (1<< ADSC);
+	while((ADCSRA & (1<< ADIF)) == 0) ; 
+	adc_low=ADCL;
+	adc_high=ADCH;
+	value = (adc_high<<8) | adc_low;
+	return value;
+}
+
+// 광센서 값으로 숫자 랜덤하게 만들기
+int main(void)
+{ 
+
+	unsigned char i;
+	_delay_ms(50);                                 // wait for system stabilization
+	GLCD_Port_Init();                             // initialize MCU and kit
+	GLCD_Init();
+
+	init_adc();
+	srand(read_adc());
+
+	while(1)
+	{ 
+		GLCD_xy(0,0);
+		GLCD_2DigitDecimal(rand()%30);
+		_delay_ms(1000);
+	}
+}
+
+
+
+
+
+

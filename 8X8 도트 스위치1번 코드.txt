@@ -1,0 +1,88 @@
+//mission
+
+
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#define F_CPU 16000000UL
+#include <util/delay.h>
+
+#define STOP 0
+#define GO 1
+
+volatile int state= STOP;
+
+
+unsigned char hello[5][8] = {
+	0xbd,0xbd,0xbd,0x81,0xbd,0xbd,0xbd,0xbd,	// H
+
+	0x81,0xfd,0xfd,0x81,0xfd,0xfd,0xfd,0x81,	// E
+
+	0xfd,0xfd,0xfd,0xfd,0xfd,0xfd,0xfd,0x81,	// L
+
+	0xfd,0xfd,0xfd,0xfd,0xfd,0xfd,0xfd,0x81,	// L
+
+	0xe7,0xdb,0xbd,0xbd,0xbd,0xbd,0xdb,0xe7	// O
+}; //
+
+
+ISR(INT4_vect){
+	
+	if(state == STOP){
+		state=GO;
+	}
+	
+	else{
+		state=STOP;
+	}
+	_delay_ms(30);
+
+}
+
+
+void init(){
+	DDRA=0xff;
+	DDRF=0xff;
+	
+	DDRE=0xcf;
+	EICRB=0x0a;
+	EIMSK=0x30;
+	sei();
+}
+
+
+void sw1_hello(){
+	int i,j,k=0;
+	
+	while(1){
+		for(i=0; i<5; i++){
+			for(j=0; j<100; j++){
+				for(k=0; k<8; k++){
+					PORTA=hello[i][k];
+					PORTF= 1<< k;
+					_delay_ms(1);
+				}
+			}
+		}
+	}
+}
+
+
+
+int main()
+{
+	unsigned char data[] ={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};	// Blank
+
+	init();
+	
+	while(1){
+		if(state ==STOP){
+			PORTF= data[1];
+			_delay_ms(1);
+		}
+		else{
+			sw1_hello();
+		}
+	}
+	
+}
